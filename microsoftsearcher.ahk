@@ -1,35 +1,75 @@
 ﻿#Requires AutoHotkey v2.0
 #SingleInstance Force
 
-#Include PhraseList.ahk 
+#Include lists.ahk 
 
 macroing := false
 
+chanceOfComma := 80
+chanceOfTypo := 4
+
 timeBeforeClear := 0
-timeBetweenTypeSegments := 150
 timeBeforeSearching := 250
+
+maxTimeBetweenTypeSegments := 125
+minTimeBetweenTypeSegments := 100
+timeBetweenTypeSegments := 0
 
 maxTimeBetween := 5250
 minTimeBetween := 4750
 timeBetween := 1
 
+create_commas_in_string(str, commaChance, typoChance) {
+    global typoList
+
+    finalStr := ""
+    chars := StrSplit(str)
+    typoIndex := 1
+
+    for i, char in chars {
+        if Random(1, 100) <= typoChance{
+            typoIndex := (1, typoList.Length)
+            finalStr .= typoList[typoIndex]
+        } else {
+            finalStr .= char
+        }
+
+        if Random(1, 100) <= commaChance {
+            finalStr .= ","
+        }
+    }
+
+    return finalStr
+}
+
 type_out() {
     global phraseList
+    global maxTimeBetweenTypeSegments
+    global minTimeBetweenTypeSegments
     global timeBetweenTypeSegments
 
     randomPhrase := Random(1, phraseList.Length)
-    sendSplit := StrSplit(phraseList[randomPhrase], ",")
+    sendSplit := StrSplit(create_commas_in_string(phraseList[randomPhrase], chanceOfComma, chanceOfTypo), ",")
     for i, part in sendSplit {
         if macroing {
+            timeBetweenTypeSegments := Random(minTimeBetweenTypeSegments, maxTimeBetweenTypeSegments)
             Send(part)
             Sleep(timeBetweenTypeSegments)
         }
     }
-    Send("?")
+
+    punctuationType := Random(1, 2)
+
+    if punctuationType == 1 {
+        Send("?")
+    } else {
+        Send("")
+    }
 }
 
 clear_text() {
     global macroing
+    global timeBetween
 
     if macroing {
         Send("/")
@@ -61,8 +101,7 @@ send_and_clear() {
     }
 }
 
-
-^B:: {
+F12:: {
     global macroing
     macroing := !macroing
 
