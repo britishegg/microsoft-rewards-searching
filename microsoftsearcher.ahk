@@ -2,6 +2,7 @@
 #SingleInstance Force
 
 #Include lists.ahk 
+#Include gui.ahk
 
 macroing := false
 
@@ -17,7 +18,7 @@ timeBetweenTypeSegments := 0
 
 maxTimeBetween := 5250
 minTimeBetween := 4750
-timeBetween := 1
+timeBetween := 0
 
 create_commas_in_string(str, commaChance, typoChance) {
     global typoList
@@ -27,7 +28,7 @@ create_commas_in_string(str, commaChance, typoChance) {
     typoIndex := 1
 
     for i, char in chars {
-        if Random(1, 100) <= typoChance{
+        if Random(1, 100) <= typoChance {
             typoIndex := Random(1, typoList.Length)
             finalStr .= typoList[typoIndex]
         } else {
@@ -44,6 +45,8 @@ create_commas_in_string(str, commaChance, typoChance) {
 
 type_out() {
     global phraseList
+    global chanceOfComma
+    global chanceOfTypo
     global maxTimeBetweenTypeSegments
     global minTimeBetweenTypeSegments
     global timeBetweenTypeSegments
