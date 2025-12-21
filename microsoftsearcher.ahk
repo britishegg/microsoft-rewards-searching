@@ -28,7 +28,7 @@ create_commas_in_string(str, commaChance, typoChance) {
 
     for i, char in chars {
         if Random(1, 100) <= typoChance{
-            typoIndex := (1, typoList.Length)
+            typoIndex := Random(1, typoList.Length)
             finalStr .= typoList[typoIndex]
         } else {
             finalStr .= char
