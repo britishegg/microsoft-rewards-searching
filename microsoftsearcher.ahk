@@ -3,39 +3,64 @@
 
 #Include PhraseList.ahk 
 
-timeBeforeClear := 2500
-timeBetween := 10000
 macroing := false
 
+timeBeforeClear := 0
+timeBetweenTypeSegments := 150
+timeBeforeSearching := 250
+
+maxTimeBetween := 5250
+minTimeBetween := 4750
+timeBetween := 1
+
 type_out() {
+    global phraseList
+    global timeBetweenTypeSegments
+
     randomPhrase := Random(1, phraseList.Length)
     sendSplit := StrSplit(phraseList[randomPhrase], ",")
     for i, part in sendSplit {
-        Send(part)
-        Sleep(100)
+        if macroing {
+            Send(part)
+            Sleep(timeBetweenTypeSegments)
+        }
     }
     Send("?")
 }
 
 clear_text() {
-    Send("/")
-    Sleep(500)
-    Send("^a")
-    Sleep(250)
-    Send("{Delete}")
+    global macroing
+
+    if macroing {
+        Send("/")
+        Sleep(50)
+        Send("^a")
+        Sleep(50)
+        Send("{Delete}")
+        SetTimer(send_and_clear, -timeBetween)
+    }
 }
 
 send_and_clear() {
+    global macroing
+    global timeBeforeSearching
+    global timeBeforeClear
+    global maxTimeBetween
+    global minTimeBetween
+    global timeBetween
+
     if macroing {
+        timeBetween := Random(minTimeBetween, maxTimeBetween)
+        timeBeforeClear := timeBetween * 0.5
+
         type_out()
-        Sleep(250)
+        Sleep(timeBeforeSearching)
         Send("{Enter}")
         Sleep(timeBeforeClear)
         clear_text()
     }
 }
 
-SetTimer(send_and_clear, timeBetween)
 
 ^B:: {
     global macroing
@@ -49,5 +74,5 @@ SetTimer(send_and_clear, timeBetween)
         ToolTip("Auto-searching stopped", x + 15, y + 15)
     }
 
-    SetTimer(ToolTip, 1500)
+    SetTimer(ToolTip, -1500)
 }
