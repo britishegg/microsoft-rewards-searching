@@ -4,7 +4,7 @@
 #Include PhraseList.ahk 
 
 timeBeforeClear := 2500
-timeBetween := 5000
+timeBetween := 10000
 macroing := false
 
 type_out() {
@@ -40,8 +40,14 @@ SetTimer(send_and_clear, timeBetween)
 ^B:: {
     global macroing
     macroing := !macroing
-    if macroing
-        MsgBox("Auto-searching start")
-    else
-        MsgBox("Auto-searching stop")
+
+    MouseGetPos(&x, &y)
+    if macroing {
+        ToolTip("Auto-searching started", x + 15, y + 15)
+        send_and_clear()
+    } else {
+        ToolTip("Auto-searching stopped", x + 15, y + 15)
+    }
+
+    SetTimer(ToolTip, 1500)
 }
