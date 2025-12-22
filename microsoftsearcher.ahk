@@ -110,10 +110,12 @@ F12:: {
 
     MouseGetPos(&x, &y)
     if macroing {
-        ToolTip("Auto-searching started", x + 15, y + 15)
+        ToolTip("Started", x + 15, y + 15)
+        settingsGui.Title := "Settings (Searching)"
         send_and_clear()
     } else {
-        ToolTip("Auto-searching stopped", x + 15, y + 15)
+        ToolTip("Stopped", x + 15, y + 15)
+        settingsGui.Title := "Settings (Stopped)"
     }
 
     SetTimer(ToolTip, -1500)
