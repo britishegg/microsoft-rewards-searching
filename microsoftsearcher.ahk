@@ -1,28 +1,63 @@
 ﻿#Requires AutoHotkey v2.0
 #SingleInstance Force
 
-#Include lists.ahk 
+if FileExist("JSON.ahk") {
+    #Include JSON.ahk
+}
 #Include gui.ahk
+#Include constants.ahk
+
+ai := true
+model := "gpt-oss:20b-cloud"
 
 macroing := false
 
-chanceOfComma := 80
-chanceOfTypo := 4
-
-timeBeforeClear := 0
-timeBeforeSearching := 250
-
-maxTimeBetweenTypeSegments := 125
-minTimeBetweenTypeSegments := 100
 timeBetweenTypeSegments := 0
+timeBetweenSearches := 0
 
-maxTimeBetween := 5250
-minTimeBetween := 4750
-timeBetween := 0
+if !check_for_internet() {
+    ai := false
+    aiGuiCheckBox.Value := 0
+    aiGuiCheckBox.Enabled := false
+    MsgBox("No internet can't use AI", "No Internet", "0x1000 Icon!")
+}
+
+check_for_internet() {
+    try {
+        http := ComObject("WinHttp.WinHttpRequest.5.1")
+        http.Open("GET", "https://www.google.com", true)
+        http.Send()
+        http.WaitForResponse(1000)
+        return true
+    } catch {
+        return false
+    }
+}
+
+send_prompt(prompt) {
+    statusGui.SetFont("c32c800")
+    set_status("Generating")
+
+    url := "http://localhost:11434/api/generate"
+    http := ComObject("WinHttp.WinHttpRequest.5.1")
+    http.Open("POST", url, false)
+    http.SetRequestHeader("Content-Type", "application/json")
+
+    body := (
+        '{'
+            '"model":"' model '",'
+            '"prompt":"' StrReplace(prompt, '"', '\"') '",'
+            '"stream":false'
+        '}'
+    )
+
+    http.Send(body)
+    set_status("Typing")
+    parsed := JSON.Load(http.ResponseText)
+    return parsed["response"]
+}
 
 create_commas_in_string(str, commaChance, typoChance) {
-    global typoList
-
     finalStr := ""
     chars := StrSplit(str)
     typoIndex := 1
@@ -44,15 +79,15 @@ create_commas_in_string(str, commaChance, typoChance) {
 }
 
 type_out() {
-    global phraseList
-    global chanceOfComma
-    global chanceOfTypo
-    global maxTimeBetweenTypeSegments
-    global minTimeBetweenTypeSegments
     global timeBetweenTypeSegments
 
-    randomPhrase := Random(1, phraseList.Length)
-    sendSplit := StrSplit(create_commas_in_string(phraseList[randomPhrase], chanceOfComma, chanceOfTypo), ",")
+    if ai {
+        phrase := send_prompt(aiPrompt)
+    } else {
+        randomPhrase := Random(1, phraseList.Length)
+        phrase := phraseList[randomPhrase]
+    }
+    sendSplit := StrSplit(create_commas_in_string(phrase, commaChance, typoChance), ",")
     for i, part in sendSplit {
         if macroing {
             timeBetweenTypeSegments := Random(minTimeBetweenTypeSegments, maxTimeBetweenTypeSegments)
@@ -60,19 +95,10 @@ type_out() {
             Sleep(timeBetweenTypeSegments)
         }
     }
-
-    punctuationType := Random(1, 2)
-
-    if punctuationType == 1 {
-        Send("?")
-    } else {
-        Send("")
-    }
 }
 
 clear_text() {
-    global macroing
-    global timeBetween
+    global timeBetweenSearches := Random(minTimeBetweenSearches, maxTimeBetweenSearches)
 
     if macroing {
         Send("/")
@@ -80,22 +106,13 @@ clear_text() {
         Send("^a")
         Sleep(50)
         Send("{Delete}")
-        SetTimer(send_and_clear, -timeBetween)
+        set_status("Waiting " . Round(timeBetweenSearches / 1000, 1) . "s")
+        SetTimer(send_and_clear, -timeBetweenSearches)
     }
 }
 
 send_and_clear() {
-    global macroing
-    global timeBeforeSearching
-    global timeBeforeClear
-    global maxTimeBetween
-    global minTimeBetween
-    global timeBetween
-
     if macroing {
-        timeBetween := Random(minTimeBetween, maxTimeBetween)
-        timeBeforeClear := timeBetween * 0.5
-
         type_out()
         Sleep(timeBeforeSearching)
         Send("{Enter}")
@@ -110,13 +127,8 @@ F12:: {
 
     MouseGetPos(&x, &y)
     if macroing {
-        ToolTip("Started", x + 15, y + 15)
-        settingsGui.Title := "Settings (Searching)"
         send_and_clear()
     } else {
-        ToolTip("Stopped", x + 15, y + 15)
-        settingsGui.Title := "Settings (Stopped)"
+        set_status("Stopped")
     }
-
-    SetTimer(ToolTip, -1500)
 }
