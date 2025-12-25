@@ -129,7 +129,6 @@ toggleMacro(*) {
 
 updateHotkey() {
     Hotkey(mainHotkey, toggleMacro)
-    ToolTip mainHotkey
 }
 
 SetTimer(updateHotkey, 1)
