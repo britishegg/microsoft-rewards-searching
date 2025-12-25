@@ -1,7 +1,71 @@
 #Requires AutoHotkey v2.0
+#SingleInstance Force
 
-aiPrompt := "Gernerate an short (less than 10 words) random question someone would ask a web browser that is not related to the weather or life or any capital. Respond with only the question."
-typoList := ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z", " ", ""]
+macroing := false
+mainHotkey := "F12"
+
+ai := true
+model := "gpt-oss:20b-cloud"
+
+timeBetweenTypeSegments := 0
+timeBetweenSearches := 0
+
+typoChance := 4
+commaChance := 80
+
+maxTimeBetweenTypeSegments := 125
+minTimeBetweenTypeSegments := 100
+
+maxTimeBetweenSearches := 5250
+minTimeBetweenSearches := 4750
+
+timeBeforeClear := 2000
+timeBeforeSearching := 250
+
+aiPrompt := "Gernerate an short (less than 10 words) random question someone would ask a web browser that is not related to the weather, life, any capital city, or broswing history. Do not use capital letters. Respond with only the question."
+aiModels := ["gpt-oss:20b-cloud", "gemini-3-flash-preview:cloud", "deepseek-v3.1:671b-cloud", "nemotron-3-nano:30b-cloud", "ministral-3:3b-cloud", "qwen3-next:80b-cloud", "rnj-1:8b-cloud"]
+
+guiSettingsUD := [
+    {name: "Max Type Delay", var: maxTimeBetweenTypeSegments, max: 250, min: 0, x: "x10", y:"y10"},
+    {name: "Min Type Delay", var: minTimeBetweenTypeSegments, max: 250, min: 0, x: "x10", y:"y55"},
+    {name: "Max Time Between Searches", var: maxTimeBetweenSearches, max: 30000, min: 0, x: "x115", y:"y10"},
+    {name: "Min Time Between Searches", var: minTimeBetweenSearches, max: 30000, min: 0, x: "x115", y:"y55"},
+    {name: "Chance Of Typo", var: typoChance, max: 100, min: 0, x: "x268", y:"y10"},
+    {name: "Chance Of StrSplit", var: commaChance, max: 100, min: 0, x: "x268", y:"y55"},
+    {name: "Time Before Clear", var: timeBeforeClear, max: 5000, min: 0, x: "x10", y:"y100"},
+    {name: "Time Before Search", var: timeBeforeSearching, max: 1000, min: 0, x: "x10", y:"y145"},
+]
+
+hotkeys := ["F1", "F2", "F3", "F4", "F5", "F6", "F7", "F8", "F9", "F10", "F11", "F12"]
+
+typoMapping := Map()
+typoMapping["a"] := ["s", "q", "z"]
+typoMapping["b"] := ["v", "n", "g"]
+typoMapping["c"] := ["x", "v", "d"]
+typoMapping["d"] := ["s", "f", "e", "c"]
+typoMapping["e"] := ["w", "r", "s", "d"]
+typoMapping["f"] := ["d", "g", "r", "v"]
+typoMapping["g"] := ["f", "h", "t", "b"]
+typoMapping["h"] := ["g", "j", "y", "n"]
+typoMapping["i"] := ["u", "o", "k", "j"]
+typoMapping["j"] := ["h", "k", "u", "m"]
+typoMapping["k"] := ["j", "l", "i", "m"]
+typoMapping["l"] := ["k", "o", "p"]
+typoMapping["m"] := ["n", "j", "k"]
+typoMapping["n"] := ["b", "m", "h"]
+typoMapping["o"] := ["i", "p", "l"]
+typoMapping["p"] := ["o", "l"]
+typoMapping["q"] := ["w", "a"]
+typoMapping["r"] := ["e", "t", "d", "f"]
+typoMapping["s"] := ["a", "d", "w", "x", "z"]
+typoMapping["t"] := ["r", "y", "f", "g"]
+typoMapping["u"] := ["y", "i", "h", "j"]
+typoMapping["v"] := ["c", "b", "f", "g"]
+typoMapping["w"] := ["q", "e", "a", "s"]
+typoMapping["x"] := ["z", "c", "s", "d"]
+typoMapping["y"] := ["t", "u", "g", "h"]
+typoMapping["z"] := ["a", "s", "x"]
+typoMapping[" "] := [""]
 
 phraseList := [
     "how to tie shoes",

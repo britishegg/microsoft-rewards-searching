@@ -7,22 +7,14 @@ if FileExist("JSON.ahk") {
 #Include gui.ahk
 #Include constants.ahk
 
-ai := true
-model := "gpt-oss:20b-cloud"
-
-macroing := false
-
-timeBetweenTypeSegments := 0
-timeBetweenSearches := 0
-
-if !check_for_internet() {
+if !checkForInternet() {
     ai := false
     aiGuiCheckBox.Value := 0
     aiGuiCheckBox.Enabled := false
     MsgBox("No internet can't use AI", "No Internet", "0x1000 Icon!")
 }
 
-check_for_internet() {
+checkForInternet() {
     try {
         http := ComObject("WinHttp.WinHttpRequest.5.1")
         http.Open("GET", "https://www.google.com", true)
@@ -34,9 +26,9 @@ check_for_internet() {
     }
 }
 
-send_prompt(prompt) {
+sendPrompt(prompt) {
     statusGui.SetFont("c32c800")
-    set_status("Generating")
+    setStatus("Generating")
 
     url := "http://localhost:11434/api/generate"
     http := ComObject("WinHttp.WinHttpRequest.5.1")
@@ -52,20 +44,21 @@ send_prompt(prompt) {
     )
 
     http.Send(body)
-    set_status("Typing")
     parsed := JSON.Load(http.ResponseText)
     return parsed["response"]
 }
 
-create_commas_in_string(str, commaChance, typoChance) {
+createCommasInString(str, commaChance, typoChance) {
     finalStr := ""
     chars := StrSplit(str)
     typoIndex := 1
 
     for i, char in chars {
         if Random(1, 100) <= typoChance {
-            typoIndex := Random(1, typoList.Length)
-            finalStr .= typoList[typoIndex]
+            if typoMapping.Has(char) {
+                typoIndex := Random(1, typoMapping[char].Length)
+                finalStr .= typoMapping[char][typoIndex]
+            }
         } else {
             finalStr .= char
         }
@@ -78,16 +71,18 @@ create_commas_in_string(str, commaChance, typoChance) {
     return finalStr
 }
 
-type_out() {
+typeOut() {
     global timeBetweenTypeSegments
 
+    setStatus("Typing")
+
     if ai {
-        phrase := send_prompt(aiPrompt)
+        phrase := sendPrompt(aiPrompt)
     } else {
         randomPhrase := Random(1, phraseList.Length)
         phrase := phraseList[randomPhrase]
     }
-    sendSplit := StrSplit(create_commas_in_string(phrase, commaChance, typoChance), ",")
+    sendSplit := StrSplit(createCommasInString(phrase, commaChance, typoChance), ",")
     for i, part in sendSplit {
         if macroing {
             timeBetweenTypeSegments := Random(minTimeBetweenTypeSegments, maxTimeBetweenTypeSegments)
@@ -97,7 +92,7 @@ type_out() {
     }
 }
 
-clear_text() {
+clearText() {
     global timeBetweenSearches := Random(minTimeBetweenSearches, maxTimeBetweenSearches)
 
     if macroing {
@@ -106,29 +101,35 @@ clear_text() {
         Send("^a")
         Sleep(50)
         Send("{Delete}")
-        set_status("Waiting " . Round(timeBetweenSearches / 1000, 1) . "s")
-        SetTimer(send_and_clear, -timeBetweenSearches)
+        setStatus("Waiting " . Round(timeBetweenSearches / 1000, 1) . "s")
+        SetTimer(sendAndClear, -timeBetweenSearches)
     }
 }
 
-send_and_clear() {
+sendAndClear() {
     if macroing {
-        type_out()
+        typeOut()
         Sleep(timeBeforeSearching)
         Send("{Enter}")
         Sleep(timeBeforeClear)
-        clear_text()
+        clearText()
     }
 }
 
-F12:: {
+toggleMacro(*) {
     global macroing
     macroing := !macroing
 
-    MouseGetPos(&x, &y)
     if macroing {
-        send_and_clear()
+        sendAndClear()
     } else {
-        set_status("Stopped")
+        setStatus("Stopped")
     }
 }
+
+updateHotkey() {
+    Hotkey(mainHotkey, toggleMacro)
+    ToolTip mainHotkey
+}
+
+SetTimer(updateHotkey, 1)
